@@ -1,0 +1,4 @@
+[package]
+name = "sonar-sweep"
+version = "0.1.0"
+author=["Nancy <nanstchen@gmail.com>"]
