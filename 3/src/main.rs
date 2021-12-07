@@ -20,44 +20,41 @@ impl Node {
         }
     }
 
-    
-    fn find(&self, mut path: Chars) -> String {
-        match path.next() {
-            Some('1') => match self.one {
-                None => {
-                    if let Some(ref node) = self.zero {
-                        node.find(path)
+    fn find(&self, find_most_common_bit: bool) -> String {
+        if let Some(ref node_one) = self.one {
+            if let Some(ref node_zero) = self.zero {
+                if node_one.weight < node_zero.weight {
+                    if find_most_common_bit {
+                        node_zero.find(find_most_common_bit)
                     } else {
-                        self.value.clone()
+                        node_one.find(find_most_common_bit)
+                    }
+                } else {
+                    if find_most_common_bit {
+                        node_one.find(find_most_common_bit)
+                    } else {
+                        node_zero.find(find_most_common_bit)
                     }
                 }
-                Some(ref node) => node.find(path),
-            },
-            Some('0') => match self.zero {
-                None => {
-                    if let Some(ref node) = self.one {
-                        node.find(path)
-                    } else {
-                        self.value.clone()
-                    }
-                }
-                Some(ref node) => node.find(path),
-            },
-            _ => self.value.clone(),
+            } else {
+                node_one.find(find_most_common_bit)
+            }
+        } else if let Some(ref node_zero) = self.zero {
+            node_zero.find(find_most_common_bit)
+        } else {
+            // leaf node with full path
+            self.value.clone()
         }
     }
-    /*
-    fn find(&self) -> String {
-
-    }
-    */
 }
 
 fn add_node_to_bst(root: &mut Node, path: &mut Chars) {
     match path.next() {
         Some('1') => {
             if let Some(ref mut node) = root.one {
+                let old_weight = node.weight;
                 add_node_to_bst(node, path);
+                root.weight += node.weight - old_weight;
             } else {
                 let mut new_str = root.value.clone();
                 new_str.push('1');
@@ -69,13 +66,15 @@ fn add_node_to_bst(root: &mut Node, path: &mut Chars) {
         }
         Some('0') => {
             if let Some(ref mut node) = root.zero {
+                let old_weight = node.weight;
                 add_node_to_bst(node, path);
+                root.weight += node.weight - old_weight;
             } else {
                 let mut new_str = root.value.clone();
                 new_str.push('0');
                 let mut new_node = Node::new(new_str);
                 add_node_to_bst(&mut new_node, path);
-                root.weight += 1 + new_node.weight; 
+                root.weight += 1 + new_node.weight;
                 root.zero = Some(Box::new(new_node));
             }
         }
@@ -94,16 +93,14 @@ fn from_binary_str_to_decimal(binary_str: &str) -> i32 {
         })
 }
 
-fn calculate_oxygen_generator_rating(gemma_rate: &str, bst: &Node) -> i32 {
-    let path = gemma_rate.chars();
-    let o2_str = bst.find(path);
+fn calculate_oxygen_generator_rating(bst: &Node) -> i32 {
+    let o2_str = bst.find(true);
     println!("{}", o2_str);
     from_binary_str_to_decimal(&o2_str)
 }
 
-fn calculate_co2_srubber_rating(epsilon_rate: &str, bst: &Node) -> i32 {
-    let path = epsilon_rate.chars();
-    let co2_str = bst.find(path);
+fn calculate_co2_srubber_rating(bst: &Node) -> i32 {
+    let co2_str = bst.find(false);
     println!("{}", co2_str);
     from_binary_str_to_decimal(&co2_str)
 }
@@ -157,7 +154,7 @@ fn get_data(file_name: &str) -> Lines<BufReader<File>> {
 
 fn main() {
     println!("Solving problems...");
-    let lines = get_data("sample_input.txt");
+    let lines = get_data("input.txt");
     let mut bst = Node {
         one: None,
         zero: None,
@@ -178,15 +175,13 @@ fn main() {
         gemma_rate * epsilon_rate
     );
 
-    let o2_rate = calculate_oxygen_generator_rating(&gemma_rate_str, &bst);
-    let co2_rate = calculate_co2_srubber_rating(&epsilon_rate_str, &bst);
+    let o2_rate = calculate_oxygen_generator_rating(&bst);
+    let co2_rate = calculate_co2_srubber_rating(&bst);
 
-    
     println!(
         "o2: {}, co2: {}, life support rating: {}",
         o2_rate,
         co2_rate,
         o2_rate * co2_rate
     );
-    
 }
