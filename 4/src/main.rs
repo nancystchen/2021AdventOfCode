@@ -10,7 +10,9 @@ struct Board {
     // - mark in constant time (value -> i/j)
     // - check bingo in constant time (check if i or j are a line)
     value_to_position_map: HashMap<u32, (usize, usize)>,
-    marked: Vec<usize>,
+    values: Vec<Vec<u32>>,
+    marked: Vec<Vec<bool>>,
+    marked_lines: Vec<usize>,
 }
 
 impl Board {
@@ -27,15 +29,20 @@ impl Board {
                 });
         Self {
             value_to_position_map,
-            marked: (0..board_values.len() * 2).map(|_| 0).collect(),
+            marked: (0..board_values.len())
+                .map(|_| (0..board_values.len()).map(|_| false).collect())
+                .collect(),
+            marked_lines: (0..board_values.len() * 2).map(|_| 0).collect(),
+            values: board_values,
         }
     }
 
     // mark a number if possible
     fn mark(&mut self, value: u32) -> Option<(usize, usize)> {
         if let Some(&(i, j)) = self.value_to_position_map.get(&value) {
-            self.marked[i] += 1;
-            self.marked[j] += 1;
+            self.marked[i][j] = true;
+            self.marked_lines[i] += 1;
+            self.marked_lines[self.marked.len() + j] += 1;
             Some((i, j))
         } else {
             None
@@ -44,11 +51,19 @@ impl Board {
 
     // check for numbers marked if we have formed a line
     fn check_bingo(&self, pos: &(usize, usize)) -> bool {
-        self.marked[pos.0] == 5 || self.marked[pos.1] == 5
+        self.marked_lines[pos.0] == 5 || self.marked_lines[pos.1] == 5
     }
 
-    fn calculate_score(&self) -> u32 {
-        1000 //STUB
+    fn calculate_winning_score(&self, winning_number: u32) -> u32 {
+        let sum = self.marked.iter().enumerate().fold(0, |acc, (i, row)| {
+            let row_sum: u32 = row
+                .iter()
+                .enumerate()
+                .map(|(j, makred)| if !makred { self.values[i][j] } else { 0 })
+                .sum();
+            acc + row_sum
+        });
+        sum * winning_number
     }
 }
 
@@ -77,7 +92,7 @@ fn create_board(rows: std::iter::Take<&mut Lines<BufReader<File>>>) -> Board {
 fn get_boards(data: &mut Lines<BufReader<File>>) -> Vec<Board> {
     let mut boards = vec![];
     while let Some(line) = data.next() {
-        if  line.unwrap() == "" {
+        if line.unwrap() == "" {
             let board = create_board(data.take(5));
             boards.push(board);
         }
@@ -92,6 +107,7 @@ fn main() {
     let numbers = get_numbers(&mut data);
     let mut boards = get_boards(&mut data);
     let mut winning_board = 0;
+    let mut winning_number = 0;
 
     for n in numbers {
         let mut bingo = false;
@@ -99,6 +115,7 @@ fn main() {
             if let Some(pos) = board.mark(n) {
                 let is_bingo = board.check_bingo(&pos);
                 if is_bingo {
+                    winning_number = n;
                     winning_board = board_idx;
                     bingo = true;
                     break;
@@ -109,7 +126,7 @@ fn main() {
             break;
         }
     }
-    println!("Winning board is: {:?}", winning_board);
-    let score = boards[winning_board].calculate_score();
+    println!("Winning board is: {:?}", boards[winning_board].values);
+    let score = boards[winning_board].calculate_winning_score(winning_number);
     println!("Board score is {:?}", score);
 }
