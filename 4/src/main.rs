@@ -44,6 +44,7 @@ impl Board {
             self.marked_lines[i] += 1;
             self.marked_lines[self.marked.len() + j] += 1;
             Some((i, j))
+
         } else {
             None
         }
@@ -51,7 +52,7 @@ impl Board {
 
     // check for numbers marked if we have formed a line
     fn check_bingo(&self, pos: &(usize, usize)) -> bool {
-        self.marked_lines[pos.0] == 5 || self.marked_lines[pos.1] == 5
+        self.marked_lines[pos.0] == 5 || self.marked_lines[self.marked.len() + pos.1] == 5
     }
 
     fn calculate_winning_score(&self, winning_number: u32) -> u32 {
@@ -106,27 +107,34 @@ fn main() {
     let mut data = BufReader::new(file).lines();
     let numbers = get_numbers(&mut data);
     let mut boards = get_boards(&mut data);
+    let mut winning_boards = (0..boards.len()).map(|_| false).collect::<Vec<bool>>();
+    let mut num_winning_boards = boards.len();
     let mut winning_board = 0;
     let mut winning_number = 0;
 
     for n in numbers {
-        let mut bingo = false;
         for (board_idx, board) in boards.iter_mut().enumerate() {
             if let Some(pos) = board.mark(n) {
                 let is_bingo = board.check_bingo(&pos);
-                if is_bingo {
+                if is_bingo && !winning_boards[board_idx] {
+                    winning_boards[board_idx] = true; // marked it as won
+                    num_winning_boards -= 1;
                     winning_number = n;
                     winning_board = board_idx;
-                    bingo = true;
+                }
+                if num_winning_boards == 0 {
                     break;
                 }
             }
         }
-        if bingo {
+        if num_winning_boards == 0 {
             break;
         }
     }
-    println!("Winning board is: {:?}", boards[winning_board].values);
+    println!(
+        "Winning number: {}. Winning board is {} : {:?}.",
+        winning_number, winning_board, boards[winning_board].marked_lines
+    );
     let score = boards[winning_board].calculate_winning_score(winning_number);
     println!("Board score is {:?}", score);
 }
