@@ -30,27 +30,41 @@ fn count_tall_vents(map_data: &HashMap<(u32, u32), usize>, height: usize) -> usi
 fn generate_coords(vent_data: VentLine) -> Vec<(u32, u32)> {
     if vent_data.forms_horizontal_lines() {
         if vent_data.start.0 < vent_data.end.0 {
-            return (vent_data.start.0..(vent_data.end.0 + 1))
+            (vent_data.start.0..(vent_data.end.0 + 1))
                 .map(|x| (x, vent_data.start.1))
-                .collect::<Vec<(u32, u32)>>();
+                .collect::<Vec<(u32, u32)>>()
         } else {
-            return (vent_data.end.0..(vent_data.start.0 + 1))
+            (vent_data.end.0..(vent_data.start.0 + 1))
                 .map(|x| (x, vent_data.start.1))
-                .collect::<Vec<(u32, u32)>>();
+                .collect::<Vec<(u32, u32)>>()
         }
     } else if vent_data.forms_vertical_lines() {
         if vent_data.start.1 < vent_data.end.1 {
-            return (vent_data.start.1..(vent_data.end.1 + 1))
+            (vent_data.start.1..(vent_data.end.1 + 1))
                 .map(|y| (vent_data.start.0, y))
-                .collect::<Vec<(u32, u32)>>();
+                .collect::<Vec<(u32, u32)>>()
         } else {
-            return (vent_data.end.1..(vent_data.start.1 + 1))
+            (vent_data.end.1..(vent_data.start.1 + 1))
                 .map(|y| (vent_data.start.0, y))
-                .collect::<Vec<(u32, u32)>>();
+                .collect::<Vec<(u32, u32)>>()
         }
+    } else {
+        let x_sequence: Vec<u32>  = {
+            if vent_data.start.0 < vent_data.end.0 {
+                (vent_data.start.0..(vent_data.end.0 + 1)).collect()
+            } else {
+                (vent_data.end.0..(vent_data.start.0 + 1)).rev().collect()
+            }
+        };
+        let y_sequence: Vec<u32> = {
+            if vent_data.start.1 < vent_data.end.1 {
+                (vent_data.start.1..(vent_data.end.1 + 1)).collect()
+            } else {
+                (vent_data.end.1..(vent_data.start.1 + 1)).rev().collect()
+            }
+        };
+        x_sequence.into_iter().zip(y_sequence.into_iter()).collect()
     }
-
-    vec![]
 }
 
 // Given a data string, create a vent line
@@ -71,7 +85,7 @@ fn parse_data(data: String) -> VentLine {
 fn main() {
     println!("Solving problem...");
     let mut data_map = HashMap::<(u32, u32), usize>::new();
-    let file = File::open("sample_input.txt").unwrap();
+    let file = File::open("input.txt").unwrap();
     let lines = BufReader::new(file).lines();
     lines.for_each(|line| {
         if let Ok(data) = line {
@@ -84,7 +98,7 @@ fn main() {
     });
     let tall_vent_count = count_tall_vents(&data_map, VENT_HEIGHT_LIMIT);
     println!(
-        "Number of vents greater than {}: {}",
+        "Number of vents equal or greater than {}: {}",
         VENT_HEIGHT_LIMIT, tall_vent_count
     );
 }
