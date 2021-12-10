@@ -30,7 +30,7 @@ impl fmt::Display for ParseError {
 }
 
 #[derive(Debug, PartialEq)]
-enum Brackets {
+enum Bracket {
     RoundOpen,
     RoundClosed,
     SquareOpen,
@@ -41,7 +41,7 @@ enum Brackets {
     PointyClosed,
 }
 
-impl Brackets {
+impl Bracket {
     fn new(ch: &char) -> Result<Self, ParseError> {
         match ch {
             '(' => Ok(Self::RoundOpen),
@@ -95,26 +95,37 @@ impl Brackets {
     }
 }
 
-fn calculate_corrupt_score(bugs: Vec<char>) -> usize {
-    unimplemented!()
+fn calculate_corrupt_score(bugs: Vec<Bracket>) -> usize {
+    bugs.iter().map(|b| b.get_points()).sum()
 }
 
 // Given a linked list of chars, find the corrupted bracket if it exists.
-fn find_corrupted_bracket(list: LinkedList<char>) -> Option<char> {
+fn find_corrupted_bracket(list: LinkedList<Bracket>) -> Option<Bracket> {
     unimplemented!()
 }
 
-// Given a file buffer, for each line in it, generate a linked list of chars.
-fn parse_data(data: Lines<BufReader<File>>) -> Vec<LinkedList<char>> {
-    unimplemented!()
+// Given a file buffer, for each line in it, generate a linked list of bracket.
+fn parse_data(data: Lines<BufReader<File>>) -> Vec<LinkedList<Bracket>> {
+    data.map(|line| {
+        if let Ok(string) = line {
+            string
+                .chars()
+                .map(|ch| Bracket::new(&ch).unwrap())
+                .collect::<LinkedList<Bracket>>()
+        } else {
+            LinkedList::new()
+        }
+    }).collect()
 }
 
 fn main() {
     let file = File::open("sample_input.txt").unwrap();
     let data = BufReader::new(file).lines();
     let lists = parse_data(data);
-    let corrupted_chars = lists
+    let corrupted_brackets = lists
         .into_iter()
         .filter_map(find_corrupted_bracket)
-        .collect::<Vec<char>>();
+        .collect::<Vec<Bracket>>();
+    let total_score = calculate_corrupt_score(corrupted_brackets);
+    println!("Total score: {}", total_score);
 }
