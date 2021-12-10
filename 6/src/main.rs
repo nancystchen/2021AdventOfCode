@@ -41,37 +41,63 @@ impl LanternFish {
     }
 }
 
-fn make_adult_lanternfish(cycles: Vec<u32>) -> Vec<LanternFish> {
+fn part_two(numbers: &mut Vec<usize>, days: usize) -> usize {
+    let mut new_fish_starting_idx = numbers.len();
+    (0..days).for_each(|d| {
+        let mut new_fish = 0;
+        println!("day {}",  d + 1);
+        numbers.iter_mut().enumerate().for_each(|(idx, n)| {
+            if *n > 0 {
+                *n -= 1;
+            } else if idx <= new_fish_starting_idx {
+                *n = 6 as usize;
+                new_fish += 1;
+            }
+        });
+        numbers.append(&mut (0..new_fish).map(|_| 8).collect::<Vec<usize>>());
+        new_fish_starting_idx = numbers.len();
+    });
+    new_fish_starting_idx
+}
+
+fn make_adult_lanternfish(cycles: Vec<usize>) -> Vec<LanternFish> {
     cycles
         .iter()
-        .map(|cycle| LanternFish::new(*cycle, false))
+        .map(|cycle| LanternFish::new(*cycle as u32, false))
         .collect()
 }
 
-fn get_data(line: String) -> Vec<u32> {
+fn get_data(line: String) -> Vec<usize> {
     line.trim()
         .split(',')
-        .map(|ch| ch.parse::<u32>().unwrap())
+        .map(|ch| ch.parse::<usize>().unwrap())
         .collect()
 }
 
 fn main() {
-    println!("Solving problem...");
-    let file = std::fs::File::open("sample_input.txt").unwrap();
+    let file = std::fs::File::open("input.txt").unwrap();
     let line = std::io::BufReader::new(file)
         .lines()
         .next()
         .unwrap()
         .unwrap();
-    let cycles = get_data(line);
+    let mut cycles = get_data(line);
+    // part 1
     let time_period = 256;
-    let lanternfish = make_adult_lanternfish(cycles);
-    let total_fish_count: u64 = lanternfish.len() as u64 + lanternfish
-        .into_iter()
-        .map(|mut fish| fish.reproduce(time_period))
-        .sum::<u64>();
+    let lanternfish = make_adult_lanternfish(cycles.clone());
+    let total_fish_count: u64 = lanternfish.len() as u64
+        + lanternfish
+            .into_iter()
+            .enumerate()
+            .map(|(idx, mut fish)| {
+                println!("checking fish no.{}", idx);
+                fish.reproduce(time_period)})
+            .sum::<u64>();
     println!(
-        "Total number of laternfish after {} days: {}",
+        "Total number of lanternfish after {} days: {}",
         time_period, total_fish_count
     );
+
+    //let total = part_two(&mut cycles, 80);
+    //println!("Total number of lanternfish after 256 days: {}", total);
 }
