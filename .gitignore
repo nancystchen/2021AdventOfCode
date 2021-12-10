@@ -351,3 +351,6 @@ MigrationBackup/
 
 # Ignore Rust binaries
 **/target
+
+# Ignore any sample input files
+**/sample_input.txt
