@@ -20,6 +20,7 @@ impl Node {
         }
     }
 
+    // This is a O(log(n)) implementation of finding the bits 
     fn find(&self, find_most_common_bit: bool) -> String {
         if let Some(ref node_one) = self.one {
             if let Some(ref node_zero) = self.zero {
@@ -48,33 +49,32 @@ impl Node {
     }
 }
 
+// O(n) operation to log a binary number into a tree
 fn add_node_to_bst(root: &mut Node, path: &mut Chars) {
     match path.next() {
         Some('1') => {
             if let Some(ref mut node) = root.one {
-                let old_weight = node.weight;
+                root.weight += 1;
                 add_node_to_bst(node, path);
-                root.weight += node.weight - old_weight;
             } else {
                 let mut new_str = root.value.clone();
                 new_str.push('1');
                 let mut new_node = Node::new(new_str);
                 add_node_to_bst(&mut new_node, path);
-                root.weight += 1 + new_node.weight;
+                root.weight += 1;
                 root.one = Some(Box::new(new_node));
             }
         }
         Some('0') => {
             if let Some(ref mut node) = root.zero {
-                let old_weight = node.weight;
+                root.weight += 1;
                 add_node_to_bst(node, path);
-                root.weight += node.weight - old_weight;
             } else {
                 let mut new_str = root.value.clone();
                 new_str.push('0');
                 let mut new_node = Node::new(new_str);
                 add_node_to_bst(&mut new_node, path);
-                root.weight += 1 + new_node.weight;
+                root.weight += 1;
                 root.zero = Some(Box::new(new_node));
             }
         }
@@ -82,6 +82,8 @@ fn add_node_to_bst(root: &mut Node, path: &mut Chars) {
     };
 }
 
+// Convert binary to decimal
+// TODO: learn how to mask with bit mask
 fn from_binary_str_to_decimal(binary_str: &str) -> i32 {
     binary_str
         .chars()
@@ -95,13 +97,11 @@ fn from_binary_str_to_decimal(binary_str: &str) -> i32 {
 
 fn calculate_oxygen_generator_rating(bst: &Node) -> i32 {
     let o2_str = bst.find(true);
-    println!("{}", o2_str);
     from_binary_str_to_decimal(&o2_str)
 }
 
 fn calculate_co2_srubber_rating(bst: &Node) -> i32 {
     let co2_str = bst.find(false);
-    println!("{}", co2_str);
     from_binary_str_to_decimal(&co2_str)
 }
 
@@ -113,6 +113,8 @@ fn calculate_epsilon_rate(gemma_rate: &str) -> String {
     )
 }
 
+// O(n) operation to calcualte gemma rate
+// TODO: remove data construction part from here?
 fn calculate_gemma_rate(data: Lines<BufReader<File>>, root: &mut Node) -> String {
     let mut lines = data.peekable();
     let mut num_one_in_binary_position: Vec<usize> = lines
@@ -126,7 +128,6 @@ fn calculate_gemma_rate(data: Lines<BufReader<File>>, root: &mut Node) -> String
         let binary_str: String = line.expect("Cannot parse data into binary string");
         let mut chars_iter = binary_str.chars();
         add_node_to_bst(root, &mut chars_iter);
-        println!("{}", root.weight);
         binary_str.chars().enumerate().for_each(|(idx, c)| {
             if c == '1' {
                 num_one_in_binary_position[idx] += 1;
