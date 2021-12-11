@@ -7,8 +7,12 @@
 // - when removing open-close paris, we eventually encounter
 // - open-open pair. When this happens, skip line.
 //
-// We can take adventage of Stack.
+// We can take adventage of a stack <- very important!
 //
+// Part 2:
+// Since we already have the stack documenting incomplete opening 
+// brackets we could find the complete sequence by changing opening
+// brackets to closed, and flip the stack.
 
 use std::fmt;
 use std::fs::File;
@@ -25,6 +29,17 @@ impl fmt::Display for ParseError {
     }
 }
 
+#[derive(Debug)]
+struct ConversionError(Bracket);
+
+impl std::error::Error for ConversionError {}
+
+impl fmt::Display for ConversionError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Cannot convert {} to closed bracket!", self.0)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 enum Bracket {
     RoundOpen,
@@ -35,6 +50,21 @@ enum Bracket {
     CurlyClosed,
     PointyOpen,
     PointyClosed,
+}
+
+impl fmt::Display for Bracket {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::RoundOpen => write!(f, "("),
+            Self::SquareOpen => write!(f, "["),
+            Self::CurlyOpen => write!(f, "{{"),
+            Self::PointyOpen => write!(f, "<"),
+            Self::RoundClosed => write!(f, ")"),
+            Self::SquareClosed => write!(f, "]"),
+            Self::CurlyClosed => write!(f, "}}"),
+            Self::PointyClosed => write!(f, ">"),
+        }
+    }
 }
 
 impl Bracket {
@@ -89,13 +119,13 @@ impl Bracket {
         }
     }
 
-    fn turn_open_bracket_to_closed(&self) -> Result<Self, ParseError> {
+    fn turn_open_bracket_to_closed(&self) -> Result<Self, ConversionError> {
         match self {
             Self::RoundOpen => Ok(Self::RoundClosed),
             Self::SquareOpen => Ok(Self::SquareClosed),
             Self::CurlyOpen => Ok(Self::CurlyClosed),
             Self::PointyOpen => Ok(Self::PointyClosed),
-            _ => Err(ParseError('a')),
+            _ => Err(ConversionError(self.clone())),
         }
     }
 
@@ -108,8 +138,10 @@ impl Bracket {
     }
 }
 
+// Given a list of bracket sequences, calculate the middle completion score.
 fn calculate_completion_score(brackets_list: Vec<Vec<Bracket>>) -> usize {
-    let mut scores = brackets_list.iter()
+    let mut scores = brackets_list
+        .iter()
         .map(|brackets| {
             brackets
                 .iter()
@@ -121,6 +153,7 @@ fn calculate_completion_score(brackets_list: Vec<Vec<Bracket>>) -> usize {
     scores[middle_idx]
 }
 
+// Given a sequence of corrupted bracktes, calculate corruption score.
 fn calculate_corrupt_score(bugs: Vec<Bracket>) -> usize {
     bugs.iter().map(|b| b.get_corrupt_points()).sum()
 }
