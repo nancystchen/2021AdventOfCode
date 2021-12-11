@@ -7,13 +7,9 @@
 // - when removing open-close paris, we eventually encounter
 // - open-open pair. When this happens, skip line.
 //
-// We can take adventage of LinkedList so we don't keep resizing
-// a vector! Appending two parts should take O(1), so overall
-// operation is O(n).
-//
+// We can take adventage of Stack.
 //
 
-use std::collections::LinkedList;
 use std::fmt;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
@@ -29,7 +25,7 @@ impl fmt::Display for ParseError {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 enum Bracket {
     RoundOpen,
     RoundClosed,
@@ -63,17 +59,6 @@ impl Bracket {
         )
     }
 
-    fn is_closed(&self) -> bool {
-        matches!(
-            self,
-            Self::RoundClosed | Self::SquareClosed | Self::CurlyClosed | Self::PointyClosed
-        )
-    }
-
-    fn is_open_close_pair(front: &Self, back: &Self) -> bool {
-        front.is_open() && back.is_closed()
-    }
-
     fn is_matching_pair(front: &Self, back: &Self) -> bool {
         match front {
             Self::RoundOpen => back == &Self::RoundClosed,
@@ -84,7 +69,7 @@ impl Bracket {
         }
     }
 
-    fn get_points(&self) -> usize {
+    fn get_corrupt_points(&self) -> usize {
         match self {
             Self::RoundClosed => 3,
             Self::SquareClosed => 57,
@@ -93,29 +78,59 @@ impl Bracket {
             _ => 0,
         }
     }
+
+    fn get_completion_points(&self) -> usize {
+        match self {
+            Self::RoundClosed => 1,
+            Self::SquareClosed => 2,
+            Self::CurlyClosed => 3,
+            Self::PointyClosed => 4,
+            _ => 0,
+        }
+    }
+}
+
+fn calculate_completion_points(bracktes: Vec<Bracket>) -> usize {
+    bracktes
+        .iter()
+        .fold(0, |acc, b| acc * 5 + b.get_completion_points())
 }
 
 fn calculate_corrupt_score(bugs: Vec<Bracket>) -> usize {
-    bugs.iter().map(|b| b.get_points()).sum()
+    bugs.iter().map(|b| b.get_corrupt_points()).sum()
 }
 
-// Given a linked list of chars, find the corrupted bracket if it exists.
-fn find_corrupted_bracket(list: LinkedList<Bracket>) -> Option<Bracket> {
-    unimplemented!()
+// Given a vector of brackets, find the first corrupted bracket.
+fn find_corrupted_bracket(list: Vec<Bracket>) -> Option<Bracket> {
+    let mut stack: Vec<Bracket> = vec![];
+    for b in list {
+        if b.is_open() {
+            stack.push(b);
+        } else if let Some(front) = stack.last() {
+            if Bracket::is_matching_pair(front, &b) {
+                stack.pop();
+            } else {
+                println!("Found {:?} {:?}", front, b);
+                return Some(b);
+            }
+        }
+    }
+    None
 }
 
 // Given a file buffer, for each line in it, generate a linked list of bracket.
-fn parse_data(data: Lines<BufReader<File>>) -> Vec<LinkedList<Bracket>> {
+fn parse_data(data: Lines<BufReader<File>>) -> Vec<Vec<Bracket>> {
     data.map(|line| {
         if let Ok(string) = line {
             string
                 .chars()
                 .map(|ch| Bracket::new(&ch).unwrap())
-                .collect::<LinkedList<Bracket>>()
+                .collect::<Vec<Bracket>>()
         } else {
-            LinkedList::new()
+            Vec::new()
         }
-    }).collect()
+    })
+    .collect()
 }
 
 fn main() {
@@ -126,6 +141,7 @@ fn main() {
         .into_iter()
         .filter_map(find_corrupted_bracket)
         .collect::<Vec<Bracket>>();
+    println!("{:?}", corrupted_brackets);
     let total_score = calculate_corrupt_score(corrupted_brackets);
     println!("Total score: {}", total_score);
 }
