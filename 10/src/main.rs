@@ -88,30 +88,71 @@ impl Bracket {
             _ => 0,
         }
     }
+
+    fn turn_open_bracket_to_closed(&self) -> Result<Self, ParseError> {
+        match self {
+            Self::RoundOpen => Ok(Self::RoundClosed),
+            Self::SquareOpen => Ok(Self::SquareClosed),
+            Self::CurlyOpen => Ok(Self::CurlyClosed),
+            Self::PointyOpen => Ok(Self::PointyClosed),
+            _ => Err(ParseError('a')),
+        }
+    }
+
+    fn find_complete_sequence(openings: Vec<Bracket>) -> Vec<Bracket> {
+        openings
+            .into_iter()
+            .map(|b| Bracket::turn_open_bracket_to_closed(&b).unwrap())
+            .rev()
+            .collect()
+    }
 }
 
-fn calculate_completion_points(bracktes: Vec<Bracket>) -> usize {
-    bracktes
-        .iter()
-        .fold(0, |acc, b| acc * 5 + b.get_completion_points())
+fn calculate_completion_score(brackets_list: Vec<Vec<Bracket>>) -> usize {
+    let mut scores = brackets_list.iter()
+        .map(|brackets| {
+            brackets
+                .iter()
+                .fold(0, |acc, b| acc * 5 + b.get_completion_points())
+        })
+        .collect::<Vec<usize>>();
+    scores.sort_unstable();
+    let middle_idx = scores.len() / 2;
+    scores[middle_idx]
 }
 
 fn calculate_corrupt_score(bugs: Vec<Bracket>) -> usize {
     bugs.iter().map(|b| b.get_corrupt_points()).sum()
 }
 
-// Given a vector of brackets, find the first corrupted bracket.
-fn find_corrupted_bracket(list: Vec<Bracket>) -> Option<Bracket> {
+// Given a vector of brackets, find the sequence of brackets to complete line.
+fn find_incomplete_brackets(list: &Vec<Bracket>) -> Option<Vec<Bracket>> {
     let mut stack: Vec<Bracket> = vec![];
     for b in list {
         if b.is_open() {
-            stack.push(b);
+            stack.push(b.clone());
         } else if let Some(front) = stack.last() {
-            if Bracket::is_matching_pair(front, &b) {
+            if Bracket::is_matching_pair(front, b) {
                 stack.pop();
             } else {
-                println!("Found {:?} {:?}", front, b);
-                return Some(b);
+                return None;
+            }
+        }
+    }
+    Some(Bracket::find_complete_sequence(stack))
+}
+
+// Given a vector of brackets, find the first corrupted bracket.
+fn find_corrupted_brackets(list: &Vec<Bracket>) -> Option<Bracket> {
+    let mut stack: Vec<Bracket> = vec![];
+    for b in list {
+        if b.is_open() {
+            stack.push(b.clone());
+        } else if let Some(front) = stack.last() {
+            if Bracket::is_matching_pair(front, b) {
+                stack.pop();
+            } else {
+                return Some(b.clone());
             }
         }
     }
@@ -134,14 +175,19 @@ fn parse_data(data: Lines<BufReader<File>>) -> Vec<Vec<Bracket>> {
 }
 
 fn main() {
-    let file = File::open("sample_input.txt").unwrap();
+    let file = File::open("input.txt").unwrap();
     let data = BufReader::new(file).lines();
     let lists = parse_data(data);
     let corrupted_brackets = lists
-        .into_iter()
-        .filter_map(find_corrupted_bracket)
+        .iter()
+        .filter_map(find_corrupted_brackets)
         .collect::<Vec<Bracket>>();
-    println!("{:?}", corrupted_brackets);
     let total_score = calculate_corrupt_score(corrupted_brackets);
-    println!("Total score: {}", total_score);
+    println!("Total corruption score: {}", total_score);
+    let seqs = lists
+        .iter()
+        .filter_map(find_incomplete_brackets)
+        .collect::<Vec<Vec<Bracket>>>();
+    let completion_score = calculate_completion_score(seqs);
+    println!("Total completion score: {}", completion_score);
 }
