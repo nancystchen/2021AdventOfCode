@@ -1,5 +1,5 @@
 [package]
-name = "dumbo-octopus"
+name = "passage-pathing"
 version = "0.1.0"
 edition = "2021"
 

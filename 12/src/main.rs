@@ -12,11 +12,22 @@ use std::io::BufRead;
 
 // Given a node name, find the path to `end`.
 // Returns Some(path) if possible. If not returns None.
-fn find_end(name: &str, adj_table: &HashMap<String, Vec<String>>, path: &str) -> Vec<String> {
+fn find_end(
+    name: &str,
+    adj_table: &HashMap<String, Vec<String>>,
+    path: &str,
+    visit_small_cave_twice: bool,
+) -> Vec<String> {
     // if end, return [path + "end"]
     if name == "end" {
-        vec![concat!(path, name)]
-    } else if is_small_cave(name) && visited(path, name) {
+        vec![format!("{},{}", path, name)]
+    } else if is_small_cave(name)
+        && (if visit_small_cave_twice {
+            visited_two_caves_twice_or_one_cave_three_times(path)
+        } else {
+            visited_cave_twice(path, name)
+        })
+    {
         // if cave is small and has also been visited, returns empty vec
         vec![]
     } else {
@@ -27,17 +38,49 @@ fn find_end(name: &str, adj_table: &HashMap<String, Vec<String>>, path: &str) ->
         adj_table
             .get(name)
             .unwrap()
-            .iter(|adj| find_end(adj, adj_table, concat!(path, adj, ",")))
+            .iter()
+            .map(|adj| {
+                find_end(
+                    adj,
+                    adj_table,
+                    &format!("{},{}", path, adj),
+                    visit_small_cave_twice,
+                )
+            })
             .flatten()
-            .collect
+            .collect()
     }
 }
 
-fn visited(name: &str) -> bool {
-    unimplemented!()
+// Given a path and a small cave name, check if we have already visited the cave twice.
+fn visited_cave_twice(path: &str, name: &str) -> bool {
+    path.split(',')
+        .filter(|node_name| *node_name == name)
+        .count()
+        > 1
 }
+
+// Given a path, check if we visited more than one small cave twice, or a single small cave three
+// times.
+fn visited_two_caves_twice_or_one_cave_three_times(path: &str) -> bool {
+    let small_cave_counts = path
+        .split(',')
+        .fold(HashMap::<&str, usize>::new(), |mut acc, node_name| {
+            if is_small_cave(node_name) {
+                let count = acc.entry(node_name).or_insert(0);
+                *count += 1;
+            }
+            acc
+        })
+        .into_values()
+        .collect::<Vec<usize>>();
+    small_cave_counts.iter().filter(|n| **n == 2).count() > 1
+        || small_cave_counts.iter().any(|n| *n == 3)
+}
+
+// Check if a cave is a small cave by name.
 fn is_small_cave(name: &str) -> bool {
-    unimplemented!()
+    name != "start" && name != "end" && name.chars().next().unwrap().is_lowercase()
 }
 
 fn main() {
@@ -56,21 +99,23 @@ fn main() {
             let node_two = nodes.last().unwrap();
             // if node is already present, add the connection
             // otherwise, add node, then connection
-            // ensure end doesn't have values, start is not in values
+            // ensure end doesn't have any connectison, and start is not a connection to nodes
             let node_one_adj = adjacency_table
                 .entry(node_one.to_string())
-                .or_insert(vec![]);
-            if node_two != &"start" || node_one != &"end" {
+                .or_insert_with(std::vec::Vec::new);
+            if *node_two != "start" && *node_one != "end" {
                 node_one_adj.push(node_two.to_string());
             }
             let node_two_adj = adjacency_table
                 .entry(node_two.to_string())
-                .or_insert(vec![]);
-            if node_one != &"start" || node_two != &"end" {
+                .or_insert_with(std::vec::Vec::new);
+            if *node_one != "start" && *node_two != "end" {
                 node_two_adj.push(node_one.to_string());
             }
         };
     });
-    let paths = find_end("start", &adjacency_table, "");
-    println!("Total paths found: {}", paths.len());
+    let paths_part_1 = find_end("start", &adjacency_table, "start", false);
+    println!("Part 1: Total paths found: {}", paths_part_1.len());
+    let paths_part_2 = find_end("start", &adjacency_table, "start", true);
+    println!("Part 2: Total paths found: {}", paths_part_2.len());
 }
