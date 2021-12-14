@@ -103,8 +103,8 @@ fn make_graph(origami: &Origami) {
             });
     println!("{} {}", max_i, max_j);
 
-    (0..max_i + 1).for_each(|i| {
-        (0..max_j + 1).for_each(|j| {
+    (0..max_j + 1).for_each(|j| {
+        (0..max_i + 1).for_each(|i| {
             if origami.dots.get(&(i, j)).is_some() {
                 print!("#");
             } else {
@@ -116,11 +116,11 @@ fn make_graph(origami: &Origami) {
 }
 
 fn main() {
-    let file = File::open("sample_input.txt").unwrap();
+    let file = File::open("input.txt").unwrap();
     let data = BufReader::new(file).lines();
     let (mut origami, folds) = parse_data(data);
+    make_graph(&origami);
     folds.iter().for_each(|fold| {
-        println!("{:?}", fold);
         origami.fold(fold);
         println!("Visible dots: {}", origami.dots.len());
         make_graph(&origami);
