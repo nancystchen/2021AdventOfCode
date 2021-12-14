@@ -19,7 +19,7 @@ fn sort_string(string: &str) -> String {
 //  6666
 //
 fn decode_sequence(sequence: &str, encoding: &[String]) -> usize {
-    sequence.split(' ').fold(0, |acc, s| {
+    let num = sequence.split(' ').fold(0, |acc, s| {
         let mut chars = s.chars().into_iter().collect::<Vec<char>>();
         chars.sort_unstable();
         let seq = chars.into_iter().collect::<String>();
@@ -28,7 +28,9 @@ fn decode_sequence(sequence: &str, encoding: &[String]) -> usize {
             .position(|s| s == &seq)
             .expect(&format!("Failed to decode sequence `{}`!", s));
         acc * 10 + idx
-    })
+    });
+    println!("{}", num);
+    num
 }
 
 // Given a list of strings, find characters that are not present in every string.
@@ -103,11 +105,10 @@ fn deduce_encoding(patterns: &str) -> Vec<String> {
         .collect::<Vec<char>>()
         .first()
         .unwrap();
-    println!("{:?}", segment_table[5]);
 
     // s2 = diff(1,s5)
     segment_table[2] =
-        *find_different_segments(&[&encoding_table[1], &String::from(segment_table[4])])
+        *find_different_segments(&[&encoding_table[1], &String::from(segment_table[5])])
             .first()
             .unwrap();
     // s3 = diff(same(2 || 3 || 5), diff_1_4)
@@ -123,9 +124,9 @@ fn deduce_encoding(patterns: &str) -> Vec<String> {
     segment_table[1] = *find_different_segments(&[&diff_1_4, &String::from(segment_table[3])])
         .first()
         .unwrap();
-    // s4 = diff(diff(2 || 3 || 5), s1_s5)
+    // s4 = diff(diff(2 || 3 || 5), s1_s2_s5)
     segment_table[4] = *find_different_segments(&[
-        &[segment_table[1], segment_table[5]]
+        &[segment_table[1], segment_table[2], segment_table[5]]
             .iter()
             .collect::<String>(),
         &find_different_segments(&five_segment_patterns)
@@ -205,14 +206,15 @@ fn deduce_encoding(patterns: &str) -> Vec<String> {
         segment_table[5],
         segment_table[6],
     ];
-    nine.sort();
+    nine.sort_unstable();
     encoding_table[9] = nine.iter().collect();
 
+    println!("encoding table: {:?}", encoding_table);
     encoding_table
 }
 
 fn part_two() {
-    let file = File::open("sample_input.txt").unwrap();
+    let file = File::open("input.txt").unwrap();
     let lines = BufReader::new(file).lines();
     let total_decoded_number_sum = lines
         .map(|line| {
@@ -225,6 +227,7 @@ fn part_two() {
         })
         .sum::<usize>();
 
+    println!("{}", total_decoded_number_sum);
 }
 
 fn main() {
