@@ -38,7 +38,23 @@ fn parse_data(mut data: Lines<BufReader<File>>) -> (String, HashMap<String, char
 }
 
 fn calculate_diff(polymer: &str) -> usize {
-    unimplemented!()
+    let mut counts = HashMap::<char, usize>::new();
+    // calculate each count
+    polymer.chars().for_each(|ch| {
+        let count = counts.entry(ch).or_insert(0);
+        *count += 1;
+    });
+    let (max, min) = counts
+        .values()
+        .fold((0, usize::MAX), |(mut max, mut min), &val| {
+            if val < min {
+                min = val;
+            } else if val > max {
+                max = val;
+            }
+            (max, min)
+        });
+    max - min
 }
 
 fn main() {
