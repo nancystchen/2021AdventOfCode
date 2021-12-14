@@ -2,12 +2,25 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
 
-fn polymerize(template: String, rules: &HashMap<String, String>) -> String {
-    unimplemented!()
+fn polymerize(template: String, rules: &HashMap<String, char>) -> String {
+    let chars = template.chars().collect::<Vec<char>>();
+    let polymer = (0..template.len() - 2)
+        .map(|first_idx| {
+            let first = chars[first_idx];
+            let second = chars[first_idx + 1];
+            let key = [first, second].iter().collect::<String>();
+            if let Some(val) = rules.get(&key) {
+                [first, *val, second].iter().collect()
+            } else {
+                "".to_owned()
+            }
+        })
+        .collect::<Vec<String>>();
+    polymer.join("")
 }
 
-fn parse_data(mut data: Lines<BufReader<File>>) -> (String, HashMap<String, String>) {
-    let mut rules = HashMap::<String, String>::new();
+fn parse_data(mut data: Lines<BufReader<File>>) -> (String, HashMap<String, char>) {
+    let mut rules = HashMap::<String, char>::new();
     let template = data.next().unwrap().unwrap();
     data.next();
     data.for_each(|line| {
@@ -16,7 +29,7 @@ fn parse_data(mut data: Lines<BufReader<File>>) -> (String, HashMap<String, Stri
             let mut split = trimmed_str.split(',');
             rules.insert(
                 split.next().unwrap().to_owned(),
-                split.next().unwrap().to_owned(),
+                split.next().unwrap().chars().next().unwrap(),
             );
         }
     });
