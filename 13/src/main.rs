@@ -21,10 +21,12 @@ impl Origami {
         }
     }
 
+    // Add a dot to self
     fn add_dot(&mut self, i: usize, j: usize) {
         self.dots.insert((i, j));
     }
 
+    // Given a fold instruction, fold self. This will have impact on dot positions.
     fn fold(&mut self, fold: &Fold) {
         let folded_dots = self
             .dots
@@ -42,6 +44,7 @@ impl Origami {
         });
     }
 
+    // Given a dot and a fold instruction, calculate where the dot will land after folding
     fn calculate_folded_dot(i: usize, j: usize, fold: &Fold) -> (usize, usize) {
         match fold {
             Fold::Up(y) => {
@@ -62,6 +65,7 @@ impl Origami {
     }
 }
 
+// Given input, returns an origami paper and the fold instructions
 fn parse_data(data: Lines<BufReader<File>>) -> (Origami, Vec<Fold>) {
     let mut origami = Origami::new();
     let mut folds = vec![];
@@ -87,6 +91,8 @@ fn parse_data(data: Lines<BufReader<File>>) -> (Origami, Vec<Fold>) {
     }
     (origami, folds)
 }
+
+// Given an origami, visualize it with all dots marked with `#`
 fn make_graph(origami: &Origami) {
     let (max_i, max_j) =
         origami
@@ -119,7 +125,6 @@ fn main() {
     let file = File::open("input.txt").unwrap();
     let data = BufReader::new(file).lines();
     let (mut origami, folds) = parse_data(data);
-    make_graph(&origami);
     folds.iter().for_each(|fold| {
         origami.fold(fold);
         println!("Visible dots: {}", origami.dots.len());
