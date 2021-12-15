@@ -49,13 +49,12 @@ fn find_unvisited_min(dist: &[Vec<usize>], v: &[Vec<bool>]) -> (usize, usize) {
     (min_i, min_j)
 }
 
-
-// we can create graph on the fly because of the problem type 
+// we can create graph on the fly because of the problem type
 fn get_neighbours(i: usize, j: usize, rows: usize, cols: usize) -> Vec<(usize, usize)> {
     let mut n = vec![];
     // if has cell below
     if i > 0 {
-        n.push((i-1, j));
+        n.push((i - 1, j));
     }
     // if has cell above
     if i + 1 < rows {
@@ -63,7 +62,7 @@ fn get_neighbours(i: usize, j: usize, rows: usize, cols: usize) -> Vec<(usize, u
     }
     // if has cell to the left
     if j > 0 {
-        n.push((i, j -1));
+        n.push((i, j - 1));
     }
     // if has cell to the right
     if j + 1 < cols {
@@ -82,10 +81,41 @@ fn parse_data(data: Lines<BufReader<File>>) -> Vec<Vec<usize>> {
     .collect()
 }
 
+// 5x dimension of original graph
+fn make_full_graph(graph: &[Vec<usize>]) -> Vec<Vec<usize>> {
+    let part_width = graph[0].len();
+    let part_height = graph.len();
+    let full_width = graph[0].len() * 5;
+    let full_height = graph.len() * 5;
+    (0..full_width)
+        .map(|i| {
+            (0..full_height)
+                .map(|j| {
+                    let grid = i / part_width + j / part_height;
+                    let old_val = graph[i % part_width][j % part_height];
+                    let mut new_val = old_val + grid;
+                    if new_val != 9 {
+                        new_val %= 9;
+                    }
+                    new_val
+                })
+                .collect::<Vec<usize>>()
+        })
+        .collect()
+}
+
 fn main() {
     let file = File::open("input.txt").unwrap();
     let data = BufReader::new(file).lines();
     let graph = parse_data(data);
     let shortest_path = dijkstras_algo((0, 0), (graph[0].len() - 1, graph.len() - 1), &graph);
     println!("Lowest risk level: {}", shortest_path);
+
+    let full_graph = make_full_graph(&graph);
+    let shortest_full_path = dijkstras_algo(
+        (0, 0),
+        (full_graph[0].len() - 1, full_graph.len() - 1),
+        &full_graph,
+    );
+    println!("Lowest risk level in full map: {}", shortest_full_path);
 }
