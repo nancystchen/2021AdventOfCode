@@ -1,4 +1,4 @@
-// Famous Dijkstra's algorithm question!
+// Famous Dijkstra's algorithm question! In very vanilla non-queue fashion...
 
 use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
@@ -15,7 +15,7 @@ fn dijkstras_algo(source: (usize, usize), des: (usize, usize), graph: &[Vec<usiz
     // - if haven't found des node (problem gurantees foundable des)
     while !visited[des.0][des.1] {
         // - update node neighbours' distances from source if smaller.
-        let neighbours = get_neighbours(curr.0, curr.1, graph);
+        let neighbours = get_neighbours(curr.0, curr.1, graph[0].len(), graph.len());
         neighbours.iter().for_each(|n| {
             let n_dist = dist[curr.0][curr.1] + graph[n.0][n.1];
             if n_dist < dist[n.0][n.1] {
@@ -32,6 +32,7 @@ fn dijkstras_algo(source: (usize, usize), des: (usize, usize), graph: &[Vec<usiz
     dist[des.0][des.1]
 }
 
+// Given a list of nodes and records of visits, find unvisited node that holds smallest value.
 fn find_unvisited_min(dist: &[Vec<usize>], v: &[Vec<bool>]) -> (usize, usize) {
     let mut min = usize::MAX;
     let mut min_i = 0;
@@ -48,13 +49,24 @@ fn find_unvisited_min(dist: &[Vec<usize>], v: &[Vec<bool>]) -> (usize, usize) {
     (min_i, min_j)
 }
 
-// we can create graph on the fly because of the problem type - only right or down.
-fn get_neighbours(i: usize, j: usize, graph: &[Vec<usize>]) -> Vec<(usize, usize)> {
+
+// we can create graph on the fly because of the problem type 
+fn get_neighbours(i: usize, j: usize, rows: usize, cols: usize) -> Vec<(usize, usize)> {
     let mut n = vec![];
-    if i + 1 < graph[0].len() {
+    // if has cell below
+    if i > 0 {
+        n.push((i-1, j));
+    }
+    // if has cell above
+    if i + 1 < rows {
         n.push((i + 1, j));
     }
-    if j + 1 < graph.len() {
+    // if has cell to the left
+    if j > 0 {
+        n.push((i, j -1));
+    }
+    // if has cell to the right
+    if j + 1 < cols {
         n.push((i, j + 1));
     }
     n
